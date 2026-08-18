@@ -1,0 +1,383 @@
+/*
+ * Colour carries meaning here rather than decoration:
+ *   accent  the newest immutable version
+ *   signal  `latest`, the pointer that moves under you
+ *   muted   every older version
+ *   dashed  a prerelease
+ * Nothing else in the popup is coloured.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  --bg: #f6f7fb;
+  --panel: #ffffff;
+  --line: #e1e4ee;
+  --line-strong: #cbd0e0;
+  --text: #171a24;
+  --muted: #626a80;
+  --accent: #4b4bd6;
+  --accent-ink: #ffffff;
+  --signal: #9a6206;
+  --signal-bg: #fdf3e0;
+  --signal-line: #e7c489;
+  --danger: #b3261e;
+
+  --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --ui: system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --radius: 6px;
+  --tap: 150ms ease;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14161f;
+    --panel: #1b1e29;
+    --line: #292d3c;
+    --line-strong: #3a4054;
+    --text: #e7e9f2;
+    --muted: #868da4;
+    --accent: #7b7bff;
+    --accent-ink: #10111a;
+    --signal: #f5a524;
+    --signal-bg: #2a2113;
+    --signal-line: #6b5220;
+    --danger: #ff8a80;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  width: 400px;
+  min-height: 220px;
+  max-height: 600px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: var(--ui);
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: 3px;
+}
+
+/* ---- header ---------------------------------------------------------- */
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+.bar__label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--muted);
+  flex: none;
+}
+
+.select {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 6px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+}
+
+.icon-button {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: var(--muted);
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: color var(--tap), background var(--tap);
+}
+
+.icon-button:hover { color: var(--text); background: var(--bg); }
+
+.icon-button svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.icon-button.is-busy svg { animation: spin 700ms linear infinite; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---- search ---------------------------------------------------------- */
+
+.search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.search__icon {
+  position: absolute;
+  left: 19px;
+  width: 13px;
+  height: 13px;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+.search__input {
+  width: 100%;
+  padding: 5px 8px 5px 28px;
+  font: inherit;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+}
+
+.search__input::placeholder { color: var(--muted); }
+.search__input::-webkit-search-cancel-button { cursor: pointer; }
+
+/* ---- content --------------------------------------------------------- */
+
+.content {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.group + .group { border-top: 1px solid var(--line); }
+
+.group__head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  padding: 9px 12px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: left;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.group__head:hover { background: var(--panel); }
+
+.group__caret {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform var(--tap);
+}
+
+.group__head[aria-expanded="true"] .group__caret { transform: rotate(90deg); }
+
+.group__name {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.group__count {
+  flex: none;
+  font-size: 10px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+/* The spine ties a group's repositories to the group they belong to. */
+.group__body {
+  position: relative;
+  padding: 0 12px 10px 27px;
+}
+
+.group__body::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  bottom: 12px;
+  left: 17px;
+  width: 1px;
+  background: var(--line-strong);
+}
+
+/* ---- repository + version rail --------------------------------------- */
+
+.repo { padding: 5px 0 9px; }
+
+.repo__name {
+  margin: 0 0 5px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  word-break: break-all;
+}
+
+.repo__rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  animation: rail-in 140ms ease both;
+}
+
+@keyframes rail-in {
+  from { opacity: 0; transform: translateY(-2px); }
+}
+
+.chip {
+  padding: 2px 7px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: border-color var(--tap), color var(--tap);
+}
+
+.chip:hover { color: var(--text); border-color: var(--line-strong); }
+
+/* The newest version — the answer most lookups are after. */
+.chip.is-newest {
+  font-weight: 600;
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.chip.is-newest:hover { color: var(--accent-ink); }
+
+/* `latest` moves under you, so it is marked rather than trusted. */
+.chip.is-latest {
+  color: var(--signal);
+  background: var(--signal-bg);
+  border-color: var(--signal-line);
+}
+
+.chip.is-latest:hover { color: var(--signal); }
+
+.chip.is-prerelease { border-style: dashed; }
+
+.rail__empty,
+.rail__error {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.rail__error { color: var(--danger); }
+
+/* ---- states ---------------------------------------------------------- */
+
+.state {
+  padding: 26px 22px;
+  text-align: center;
+}
+
+.state__title {
+  margin: 0 0 5px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.state__body {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+  word-break: break-word;
+}
+
+.state__action {
+  margin-top: 13px;
+  padding: 6px 13px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--accent-ink);
+  background: var(--accent);
+  border: 0;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.loading {
+  padding: 22px;
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* ---- toast ----------------------------------------------------------- */
+
+.toast {
+  position: fixed;
+  bottom: 12px;
+  left: 50%;
+  padding: 5px 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--accent-ink);
+  background: var(--accent);
+  border-radius: 100px;
+  opacity: 0;
+  transform: translate(-50%, 6px);
+  pointer-events: none;
+  transition: opacity var(--tap), transform var(--tap);
+}
+
+.toast.is-visible { opacity: 1; transform: translate(-50%, 0); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

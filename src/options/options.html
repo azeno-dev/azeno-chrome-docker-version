@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Registry Versions — Options</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main class="page">
+    <header class="page__head">
+      <h1 class="page__title">Registry Versions</h1>
+      <p class="page__sub">Point the extension at your private Docker registries.</p>
+    </header>
+
+    <section class="panel">
+      <h2 class="panel__title">Registries</h2>
+      <ul id="registry-list" class="list"></ul>
+      <button id="add" class="button button--ghost" type="button">Add a registry</button>
+    </section>
+
+    <section id="editor" class="panel" hidden>
+      <h2 id="editor-title" class="panel__title">Add a registry</h2>
+      <form id="form" class="form" autocomplete="off">
+        <input type="hidden" id="registry-id">
+
+        <label class="field">
+          <span class="field__label">Name</span>
+          <input id="name" class="input" type="text" placeholder="Azeno production">
+          <span class="field__hint">Shown in the popup. Defaults to the host name.</span>
+        </label>
+
+        <label class="field">
+          <span class="field__label">Registry URL</span>
+          <input id="url" class="input" type="url" placeholder="https://registry.example.com" required>
+          <span class="field__hint">The registry root, without the <code>/v2</code> suffix.</span>
+        </label>
+
+        <div class="field-row">
+          <label class="field">
+            <span class="field__label">Username</span>
+            <input id="username" class="input" type="text" autocomplete="off">
+          </label>
+          <label class="field">
+            <span class="field__label">Password or token</span>
+            <input id="password" class="input" type="password" autocomplete="new-password">
+          </label>
+        </div>
+
+        <p class="warning">
+          Chrome gives extensions no secure keystore, so these credentials are stored in
+          plain text in your browser profile. Use a pull-only robot token rather than a
+          personal password.
+        </p>
+
+        <label class="field">
+          <span class="field__label">Repository list <span class="field__optional">optional</span></span>
+          <textarea id="manual-repos" class="input input--area" rows="3"
+                    placeholder="azeno/api&#10;azeno/web"></textarea>
+          <span class="field__hint">
+            Only needed when the registry blocks <code>/v2/_catalog</code>. One repository per line;
+            leave empty to read the catalog.
+          </span>
+        </label>
+
+        <div id="result" class="result" hidden></div>
+
+        <div class="actions">
+          <button id="test" class="button button--ghost" type="button">Test connection</button>
+          <div class="actions__spacer"></div>
+          <button id="cancel" class="button button--ghost" type="button">Cancel</button>
+          <button class="button" type="submit">Save registry</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script type="module" src="options.js"></script>
+</body>
+</html>

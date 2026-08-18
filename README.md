@@ -1,0 +1,154 @@
+# Registry Versions
+
+A Chrome extension that browses a private Docker Registry v2 from the toolbar:
+repositories grouped by namespace, tags sorted newest version first.
+
+Answers "which versions of this image exist, and is the one I expect there?"
+without opening a terminal.
+
+Shipping it to other people: see [DEPLOY.md](DEPLOY.md). Privacy policy: [PRIVACY.md](PRIVACY.md).
+
+## Install
+
+1. Open `chrome://extensions`.
+2. Turn on **Developer mode** (top right).
+3. Click **Load unpacked** and pick this directory.
+4. The options page opens on first install. Add your registry:
+   - **Registry URL** — the root, e.g. `https://registry.example.com`, no `/v2` suffix
+   - **Username / password or token**
+   - Click **Test connection**. Chrome asks for permission to reach the host, then
+     the extension probes `/v2/` and reports the auth scheme it detected.
+5. Click the toolbar icon.
+
+## How it works
+
+Reads two endpoints only — `/v2/_catalog` and `/v2/<repo>/tags/list` — following
+`Link: rel="next"` pagination on both. No manifest requests, so listing a
+repository costs exactly one round trip and nothing is written to the registry.
+
+**Auth.** On **Test connection** the extension probes `/v2/` and reads the
+`WWW-Authenticate` challenge. Basic credentials are then sent preemptively on
+every request. For a `Bearer` challenge it exchanges the credentials at the
+challenge's token endpoint per scope (`registry:catalog:*`, `repository:<name>:pull`)
+and caches each token until it expires.
+
+**Version ordering.** Tags sort into three ranks:
+
+| Rank | Matches | Order |
+|---|---|---|
+| 1 | `latest` | pinned to the top, marked amber |
+| 2 | semver-ish — `1.2.3`, `v2.0`, `3`, `2024.08.1`, `1.0.0-rc.1` | numeric, newest first; a release outranks its own prereleases |
+| 3 | anything else — `main-a1b2c3`, `nightly` | natural sort, so `build-10` beats `build-2` |
+
+`1.10.0` therefore sorts above `1.2.0`, and `1.0.0-beta.10` above `1.0.0-beta.2`.
+
+**Reading the chips.** Filled indigo is the newest release. Amber is `latest` —
+marked rather than trusted, because it moves. A dashed border means a prerelease.
+Click any chip to copy its `docker pull` command.
+
+**Caching.** Listings are cached for 5 minutes in `chrome.storage.session`
+(memory only, cleared when the browser closes). The refresh button bypasses it.
+
+## Registries that block `/v2/_catalog`
+
+Many private registries behind a proxy disable the catalog endpoint. When the
+extension sees a 403/404/405 there it says so and falls back to the
+**Repository list** field in options — enter one repository name per line and
+they appear in the popup as normal.
+
+## Host permissions
+
+Registry hosts cannot be declared statically for an extension that configures
+them at runtime, so access is requested per registry through
+`optional_host_permissions`. These are pinned to the hosts this build is for:
+
+```json
+"optional_host_permissions": ["https://registry.azeno.dev/*", "http://localhost/*"]
+```
+
+`http://localhost/*` is there only so the local-registry testing flow below
+works; drop it if you never test that way.
+
+**To use a different registry, add it here first** — the options page can only
+request access to hosts this list covers. Match patterns ignore the port, so
+`https://registry.azeno.dev/*` already covers `:5000` and any other port, and a
+plain-`http` LAN host needs its own entry:
+
+```json
+"optional_host_permissions": [
+  "https://registry.azeno.dev/*",
+  "http://registry.internal/*",
+  "http://localhost/*"
+]
+```
+
+Avoid widening this to `https://*/*`. A credential-handling extension that asks
+for access to every site draws the most Chrome Web Store review scrutiny, and
+it is rarely what you actually need.
+
+## Credentials
+
+Registry credentials are stored in `chrome.storage.local` **in plain text**.
+Chrome offers extensions no secure keystore, so anyone with read access to your
+browser profile directory can recover them. Use a pull-only robot token rather
+than a personal password.
+
+Bearer tokens are held only in the service worker's memory and are never
+persisted; when the worker is evicted after idle, the next request re-exchanges.
+
+## Development
+
+```bash
+npm test        # node --test test/ — 64 tests, no network or browser needed
+npm run icons   # regenerate icons/ from tools/make-icons.mjs
+npm run package # build the signed .crx to upload — see DEPLOY.md
+```
+
+The icon set is generated, not hand-drawn: `tools/make-icons.mjs` renders the
+popup's version rail (three stacked bars, brightest on top) at 16/32/48/128 with
+a small PNG encoder, so there are no binary assets to maintain by hand.
+
+The core modules under `src/core/` are pure: `fetch`, the clock, and the token
+cache are all injected, so the client is tested against a fake `fetch` rather
+than a live registry. Chrome APIs are only touched in `src/background/`,
+`src/popup/`, `src/options/`, and the two storage wrappers.
+
+```
+icons/                       generated by tools/make-icons.mjs
+src/core/version.js          tag parsing and ordering
+src/core/grouping.js         namespace grouping
+src/core/auth.js             WWW-Authenticate parsing, token URLs
+src/core/registry-client.js  catalog/tags, pagination, error classification
+src/core/concurrency.js      bounded parallel map
+src/core/settings.js         registry config in chrome.storage.local
+src/core/cache.js            5-minute listing cache
+src/background/              message router; owns all registry I/O
+```
+
+Network calls live in the service worker rather than the popup, so a request in
+flight is not cancelled when the popup closes.
+
+### Testing against a local registry
+
+```bash
+mkdir -p ~/registry-test/auth
+docker run --rm --entrypoint htpasswd httpd:2 -Bbn testuser testpass \
+  > ~/registry-test/auth/htpasswd
+docker run -d -p 5000:5000 --name reg-test \
+  -v ~/registry-test/auth:/auth \
+  -e REGISTRY_AUTH=htpasswd \
+  -e REGISTRY_AUTH_HTPASSWD_REALM="Registry Realm" \
+  -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd \
+  registry:2
+
+docker login localhost:5000 -u testuser -p testpass
+for t in 1.0.0 1.2.0 1.10.0 2.0.0-rc.1 2.0.0 latest main-a1b2c3; do
+  docker tag alpine:latest localhost:5000/azeno/api:$t
+  docker push localhost:5000/azeno/api:$t
+done
+```
+
+Add `http://localhost:5000` in options, then check `azeno/api` reads
+`latest, 2.0.0, 2.0.0-rc.1, 1.10.0, 1.2.0, 1.0.0, main-a1b2c3` in that order.
+
+Cleanup: `docker rm -f reg-test && rm -rf ~/registry-test`

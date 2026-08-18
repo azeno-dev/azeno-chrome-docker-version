@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Registry Versions</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="bar">
+    <span class="bar__label">Registry</span>
+    <select id="registry-select" class="select" aria-label="Registry"></select>
+    <button id="refresh" class="icon-button" type="button" title="Refresh" aria-label="Refresh">
+      <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 2v3h-3" />
+      </svg>
+    </button>
+    <button id="open-options" class="icon-button" type="button" title="Options" aria-label="Options">
+      <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+        <path d="M2 5h6.4M11.6 5H14M2 11h2.4M7.6 11H14" />
+        <circle cx="10" cy="5" r="1.6" />
+        <circle cx="6" cy="11" r="1.6" />
+      </svg>
+    </button>
+  </header>
+
+  <div class="search">
+    <svg class="search__icon" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+      <circle cx="7" cy="7" r="4.2" />
+      <path d="m10.2 10.2 3.3 3.3" />
+    </svg>
+    <input id="filter" class="search__input" type="search" placeholder="Filter repositories and versions"
+           autocomplete="off" spellcheck="false" aria-label="Filter repositories and versions">
+  </div>
+
+  <main id="content" class="content" aria-live="polite"></main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <template id="group-template">
+    <section class="group">
+      <button class="group__head" type="button" aria-expanded="false">
+        <svg class="group__caret" viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+          <path d="m6 3.5 5 4.5-5 4.5" />
+        </svg>
+        <span class="group__name"></span>
+        <span class="group__count"></span>
+      </button>
+      <div class="group__body" hidden></div>
+    </section>
+  </template>
+
+  <template id="repo-template">
+    <article class="repo">
+      <h2 class="repo__name"></h2>
+      <div class="repo__rail"></div>
+    </article>
+  </template>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "registry-versions",
+  "version": "0.1.2",
+  "private": true,
+  "type": "module",
+  "description": "Chrome extension that browses a private Docker Registry v2, grouping repositories by namespace and sorting tags by version.",
+  "scripts": {
+    "test": "node --test test/",
+    "icons": "node tools/make-icons.mjs",
+    "package": "node tools/package.mjs"
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "Registry Versions",
+  "version": "0.1.2",
+  "description": "Browse a private Docker Registry v2: repositories grouped by namespace, tags sorted newest version first.",
+  "permissions": ["storage", "clipboardWrite"],
+  "optional_host_permissions": ["https://registry.azeno.dev/*", "http://localhost/*"],
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "background": {
+    "service_worker": "src/background/service-worker.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Registry Versions",
+    "default_popup": "src/popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png",
+      "128": "icons/icon-128.png"
+    }
+  },
+  "options_page": "src/options/options.html"
+}

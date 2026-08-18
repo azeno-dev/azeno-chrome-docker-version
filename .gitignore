@@ -1,0 +1,12 @@
+# CRX signing keys — losing one costs a week of Chrome Web Store support, and
+# committing one defeats the point of verified uploads. See DEPLOY.md.
+*.pem
+
+# Build artifacts
+dist/
+*.crx
+*.zip
+
+node_modules/
+.DS_Store
+.playwright-mcp/
