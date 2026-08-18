@@ -63,20 +63,23 @@ them at runtime, so access is requested per registry through
 `optional_host_permissions`. These are pinned to the hosts this build is for:
 
 ```json
-"optional_host_permissions": ["https://registry.azeno.dev/*", "http://localhost/*"]
+"optional_host_permissions": ["https://registry.example.com/*", "http://localhost/*"]
 ```
+
+`registry.example.com` stands in for the real host in this README; the actual
+value lives in `manifest.json`, which must carry it for the extension to work.
 
 `http://localhost/*` is there only so the local-registry testing flow below
 works; drop it if you never test that way.
 
 **To use a different registry, add it here first** — the options page can only
 request access to hosts this list covers. Match patterns ignore the port, so
-`https://registry.azeno.dev/*` already covers `:5000` and any other port, and a
+`https://registry.example.com/*` already covers `:5000` and any other port, and a
 plain-`http` LAN host needs its own entry:
 
 ```json
 "optional_host_permissions": [
-  "https://registry.azeno.dev/*",
+  "https://registry.example.com/*",
   "http://registry.internal/*",
   "http://localhost/*"
 ]
