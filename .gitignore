@@ -33,3 +33,7 @@ coverage/
 *.swp
 .DS_Store
 Thumbs.db
+
+# Internal deployment runbook — contains the registry host and item ID.
+# Kept locally, never published.
+DEPLOY.md
