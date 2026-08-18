@@ -104,10 +104,12 @@ containing a `PRIVATE KEY` block regardless of filename — catching `git add -f
 and renamed keys, which `.gitignore` cannot. The hook installs via `npm install`,
 or by hand with `git config core.hooksPath .githooks`.
 
-Keep the key outside the working tree and point the build at it:
+The key lives outside the working tree at
+`~/.config/registry-versions/privatekey.pem`, with `CRX_KEY` exported from your
+shell profile:
 
 ```bash
-export CRX_KEY=~/.config/registry-versions/privatekey.pem
+export CRX_KEY="$HOME/.config/registry-versions/privatekey.pem"
 ```
 
 See [DEPLOY.md](DEPLOY.md) → Key handling.
