@@ -20,7 +20,10 @@ import { inflateRawSync } from 'node:zlib';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const STAGE = join(ROOT, 'dist');
-const KEY = join(ROOT, 'privatekey.pem');
+// The signing key should live outside a public repo. CRX_KEY overrides the
+// legacy in-repo location, which is gitignored but still one `git add -f`
+// away from being published.
+const KEY = process.env.CRX_KEY ?? join(ROOT, 'privatekey.pem');
 
 // Only these ship. Everything else in the repo is tooling, tests, or docs.
 const SHIPPED = ['manifest.json', 'src', 'icons'];
@@ -36,7 +39,7 @@ const fail = (message) => {
 // ---- preconditions ------------------------------------------------------
 
 if (!existsSync(KEY)) {
-  fail(`No signing key at ${KEY}.\n    This item requires a CRX signed with the key registered under\n    Verified CRX Uploads. See DEPLOY.md.`);
+  fail(`No signing key at ${KEY}.\n    Set CRX_KEY=/path/to/privatekey.pem, or place it at the repo root.\n    This item requires a CRX signed with the key registered under\n    Verified CRX Uploads. See DEPLOY.md → Key handling.`);
 }
 if (!existsSync(CHROME)) {
   fail(`Chrome not found at ${CHROME}.\n    Set CHROME=/path/to/chrome and re-run.`);

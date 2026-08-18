@@ -96,6 +96,22 @@ than a personal password.
 Bearer tokens are held only in the service worker's memory and are never
 persisted; when the worker is evicted after idle, the next request re-exchanges.
 
+## Security
+
+This repo is public; the CRX signing key must never enter it. `.gitignore` covers
+key and secret file types, and `.githooks/pre-commit` blocks any commit
+containing a `PRIVATE KEY` block regardless of filename — catching `git add -f`
+and renamed keys, which `.gitignore` cannot. The hook installs via `npm install`,
+or by hand with `git config core.hooksPath .githooks`.
+
+Keep the key outside the working tree and point the build at it:
+
+```bash
+export CRX_KEY=~/.config/registry-versions/privatekey.pem
+```
+
+See [DEPLOY.md](DEPLOY.md) → Key handling.
+
 ## Development
 
 ```bash

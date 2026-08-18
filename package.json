@@ -7,6 +7,7 @@
   "scripts": {
     "test": "node --test test/",
     "icons": "node tools/make-icons.mjs",
-    "package": "node tools/package.mjs"
+    "package": "node tools/package.mjs",
+    "prepare": "git config core.hooksPath .githooks"
   }
 }
