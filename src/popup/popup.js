@@ -1,4 +1,5 @@
 import { mapLimit } from '../core/concurrency.js';
+import { railTags, PREVIEW_LIMIT } from '../core/rail.js';
 import { parseVersion } from '../core/version.js';
 import {
   getRegistries, getSelectedRegistryId, setSelectedRegistryId, originPatternFor, hostOf,
@@ -21,6 +22,8 @@ const state = {
   /** @type {Map<string, {tags?: string[], error?: string}>} */
   repoData: new Map(),
   expanded: new Set(),
+  /** Repositories whose full version list the user has asked to see. */
+  expandedRepos: new Set(),
   filter: '',
 };
 
@@ -108,16 +111,21 @@ function renderRail(rail, repo) {
 
   // A filter matching the repository name shows all of its versions; otherwise
   // only the versions that match are worth showing.
-  const tags = matches(repo) ? data.tags : data.tags.filter(matches);
-  if (!tags.length) {
+  const narrowed = matches(repo) ? data.tags : data.tags.filter(matches);
+  if (!narrowed.length) {
     rail.append(note('rail__empty', data.tags.length ? 'No matching versions' : 'No versions pushed'));
     return;
   }
 
+  const { shown, hidden, collapsible } = railTags(narrowed, {
+    expanded: state.expandedRepos.has(repo),
+    filtered: Boolean(state.filter) && !matches(repo),
+  });
+
   // "Newest" is judged against the full list, so filtering never promotes an
   // older version into the newest slot.
   const newest = newestTag(data.tags);
-  for (const tag of tags) {
+  for (const tag of shown) {
     const chip = document.createElement('button');
     chip.type = 'button';
     chip.className = chipClass(tag, newest);
@@ -126,6 +134,28 @@ function renderRail(rail, repo) {
     chip.addEventListener('click', () => copyPullCommand(repo, tag));
     rail.append(chip);
   }
+
+  if (hidden > 0) {
+    rail.append(moreChip(`+${hidden} more`, repo));
+  } else if (collapsible) {
+    rail.append(moreChip('Show fewer', repo));
+  }
+}
+
+/** The trailing control that opens or closes a long version list. */
+function moreChip(label, repo) {
+  const chip = document.createElement('button');
+  chip.type = 'button';
+  chip.className = 'chip chip--more';
+  chip.textContent = label;
+  chip.addEventListener('click', () => toggleRepo(repo));
+  return chip;
+}
+
+function toggleRepo(repo) {
+  if (state.expandedRepos.has(repo)) state.expandedRepos.delete(repo);
+  else state.expandedRepos.add(repo);
+  render();
 }
 
 function note(className, text) {
@@ -169,7 +199,9 @@ function render() {
     const node = groupTemplate.content.cloneNode(true);
     const head = node.querySelector('.group__head');
     const body = node.querySelector('.group__body');
-    const expanded = state.expanded.has(group.name);
+    // A filter has to search the whole registry, so it opens every group it
+    // keeps; collapsed groups would hide the very matches being looked for.
+    const expanded = state.expanded.has(group.name) || Boolean(state.filter);
 
     node.querySelector('.group__name').textContent = group.name;
     node.querySelector('.group__count').textContent = String(repos.length);
@@ -180,8 +212,27 @@ function render() {
     if (expanded) {
       for (const repo of repos) {
         const repoNode = repoTemplate.content.cloneNode(true);
+        const repoHead = repoNode.querySelector('.repo__head');
+        const rail = repoNode.querySelector('.repo__rail');
+        const data = state.repoData.get(repo.full);
+        const open = state.expandedRepos.has(repo.full);
+
         repoNode.querySelector('.repo__name').textContent = repo.display;
-        renderRail(repoNode.querySelector('.repo__rail'), repo.full);
+        repoNode.querySelector('.repo__count').textContent = data?.tags
+          ? String(data.tags.length)
+          : '';
+
+        // Only offer a toggle when there is something hidden to reveal.
+        const longList = (data?.tags?.length ?? 0) > PREVIEW_LIMIT && !state.filter;
+        repoHead.classList.toggle('repo__head--static', !longList);
+        repoHead.setAttribute('aria-expanded', String(open));
+        if (longList) {
+          repoHead.addEventListener('click', () => toggleRepo(repo.full));
+        } else {
+          repoHead.disabled = true;
+        }
+
+        renderRail(rail, repo.full);
         body.append(repoNode);
       }
     }
@@ -200,6 +251,22 @@ async function toggleGroup(group) {
   state.expanded.add(group.name);
   render();
   await loadTags(group);
+}
+
+/**
+ * Filtering matches tag names, but tags are only fetched when a group is opened.
+ * Without this sweep a version search silently misses every group the user has
+ * not expanded by hand. Guarded so keystrokes do not stack up sweeps.
+ */
+let tagSweep = null;
+function ensureAllTagsLoaded() {
+  if (tagSweep) return tagSweep;
+  tagSweep = (async () => {
+    for (const group of state.groups) {
+      await loadTags(group);
+    }
+  })().finally(() => { tagSweep = null; });
+  return tagSweep;
 }
 
 /** Fetches one repository per message so each rail renders the moment it lands. */
@@ -329,6 +396,7 @@ async function init() {
   el.filter.addEventListener('input', (event) => {
     state.filter = event.target.value.trim().toLowerCase();
     render();
+    if (state.filter) ensureAllTagsLoaded();
   });
 
   const registries = await getRegistries();

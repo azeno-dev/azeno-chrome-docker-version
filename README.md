@@ -123,6 +123,7 @@ See [DEPLOY.md](DEPLOY.md) → Key handling.
 npm test        # node --test test/ — 64 tests, no network or browser needed
 npm run icons   # regenerate icons/ from tools/make-icons.mjs
 npm run package # build the signed .crx to upload — see DEPLOY.md
+npm run bump    # version bump across manifest.json + package.json
 ```
 
 The icon set is generated, not hand-drawn: `tools/make-icons.mjs` renders the
